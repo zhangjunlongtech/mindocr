@@ -5,6 +5,8 @@ import mindspore.ops as ops
 import numpy as np
 import unittest
 
+import paddle
+
 """
 Counting Module
 """
@@ -118,6 +120,60 @@ class Attention(nn.Cell):
         )
 
         return context_vector, alpha, alpha_sum
+
+"""
+Attention Decoder
+"""
+class PositionEmbeddingSine(nn.Cell):
+    def __init__(
+            self, num_pos_feats=64, temperature=10000, normalize=False, scale=None
+    ):
+        super(PositionEmbeddingSine, self).__init__()
+        self.num_pos_feats = num_pos_feats
+        self.temperature = temperature
+        self.normalize = normalize
+        if scale is not None and normalize is False:
+            raise ValueError("normalize should be True when scale is provided")
+        if scale is None:
+            scale = 2 * math.pi
+        self.scale = scale
+
+    def construct(self, x, mask):
+        y_embed = ops.cumsum(mask, 1, dtype=ms.float32)
+        x_embed = ops.cumsum(mask, 2, dtype=ms.float32)
+
+        if self.normalize:
+            eps = 1e-6
+            y_embed = y_embed / (y_embed[:, -1, :] + eps) * self.scale
+            x_embed = x_embed / (x_embed[:, :, -1:] + eps) * self.scale
+
+        dim_t = ops.arange(0, self.num_pos_feats, 1)
+        dim_t = self.temperature ** (2 * (dim_t // 2) / self.num_pos_feats)
+
+        pos_x = ops.unsqueeze(x_embed, 3) / dim_t
+        pos_y = ops.unsqueeze(y_embed, 3) / dim_t
+
+        pos_x = ops.flatten(
+            ops.stack(
+                [ops.sin(pos_x[:, :, :, 0::2]), ops.cos(pos_x[:, :, :, 1::2])],
+                axis=4,
+            ),
+            'C',
+            start_dim=3,
+        )
+        pos_y = ops.flatten(
+            ops.stack(
+                [ops.sin(pos_y[:, :, :, 0::2]), ops.cos(pos_y[:, :, :, 1::2])],
+                axis=4,
+            ),
+            'C',
+            start_dim=3,
+        )
+
+        pos = ops.concat([pos_x, pos_y], axis=3)
+        pos = ops.transpose(pos, (0, 3, 1, 2))
+        return pos
+
 
 
 """
