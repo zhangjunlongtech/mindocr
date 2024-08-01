@@ -230,7 +230,7 @@ class AttDecoder(nn.Cell):
         images_mask = images_mask[:, :, :: self.ratio, :: self.ratio]
 
         word_probs = ops.zeros((batch_size, num_steps, self.word_num))
-        word_alpha_sum = paddle.zeros((batch_size, 1, height, width))
+        word_alpha_sum = ops.zeros((batch_size, 1, height, width))
 
         hidden = self.init_hidden(cnn_features, images_mask)
         counting_context_weighted = self.counting_context_weight(counting_preds)
