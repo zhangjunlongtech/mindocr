@@ -5,8 +5,6 @@ import mindspore.ops as ops
 import numpy as np
 import unittest
 
-import paddle
-
 """
 Counting Module
 """
@@ -67,7 +65,7 @@ class CountingDecoder(nn.Cell):
         if mask is not None:
             x = x * mask
         x = ops.reshape(x, (b, self.out_channel, -1))
-        x1 = ops.reduce_sum(x, -1)
+        x1 = ops.sum(x, -1)
 
         return x1, ops.reshape(x, (b, self.out_channel, h, w))
 
@@ -121,6 +119,7 @@ class Attention(nn.Cell):
 
         return context_vector, alpha, alpha_sum
 
+
 """
 Attention Decoder
 """
@@ -147,7 +146,7 @@ class PositionEmbeddingSine(nn.Cell):
             y_embed = y_embed / (y_embed[:, -1, :] + eps) * self.scale
             x_embed = x_embed / (x_embed[:, :, -1:] + eps) * self.scale
 
-        dim_t = ops.arange(0, self.num_pos_feats, 1)
+        dim_t = ops.arange(self.num_pos_feats, dtype=ms.float32)
         dim_t = self.temperature ** (2 * (dim_t // 2) / self.num_pos_feats)
 
         pos_x = ops.unsqueeze(x_embed, 3) / dim_t
@@ -174,6 +173,127 @@ class PositionEmbeddingSine(nn.Cell):
         pos = ops.transpose(pos, (0, 3, 1, 2))
         return pos
 
+
+class AttDecoder(nn.Cell):
+    def __init__(
+            self,
+            ratio,
+            is_train,
+            input_size,
+            hidden_size,
+            encoder_out_channel,
+            dropout,
+            dropout_ratio,
+            word_num,
+            counting_decoder_out_channel,
+            attention,
+    ):
+        super(AttDecoder, self).__init__()
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.out_channel = encoder_out_channel
+        self.attention_dim = attention["attention_dim"]
+        self.dropout_prob = dropout
+        self.ratio = ratio
+        self.word_num = word_num
+        self.counting_num = counting_decoder_out_channel
+        self.is_train = is_train
+
+        self.init_weight = nn.Dense(self.out_channel, self.hidden_size)
+        self.embedding = nn.Embedding(self.word_num, self.input_size)
+        self.word_input_gru = nn.GRUCell(self.input_size, self.hidden_size)
+        self.word_attention = Attention(self.hidden_size, self.attention_dim)
+
+        self.encoder_feature_conv = nn.Conv2d(
+            self.out_channel,
+            self.attention_dim,
+            kernel_size=attention["word_conv_kernel"],
+            padding=attention["word_conv_kernel"] // 2,
+        )
+
+        self.word_state_weight = nn.Dense(self.hidden_size, self.hidden_size)
+        self.word_embedding_weight = nn.Dense(self.input_size, self.hidden_size)
+        self.word_context_weight = nn.Dense(self.out_channel, self.hidden_size)
+        self.counting_context_weight = nn.Dense(self.counting_num, self.hidden_size)
+        self.word_convert = nn.Dense(self.hidden_size, self.word_num)
+
+        if dropout:
+            self.dropout = nn.Dropout(dropout_ratio)
+
+    def forward(self, cnn_features, labels, counting_preds, images_mask, is_train=True):
+        if self.is_train:
+            _, num_steps = labels.shape
+        else:
+            num_steps = 36
+
+        batch_size, _, height, width = cnn_features.shape
+        images_mask = images_mask[:, :, :: self.ratio, :: self.ratio]
+
+        word_probs = ops.zeros((batch_size, num_steps, self.word_num))
+        word_alpha_sum = paddle.zeros((batch_size, 1, height, width))
+
+        hidden = self.init_hidden(cnn_features, images_mask)
+        counting_context_weighted = self.counting_context_weight(counting_preds)
+        cnn_features_trans = self.encoder_feature_conv(cnn_features)
+
+        position_embedding = PositionEmbeddingSine(256, normalize=True)
+        pos = position_embedding(cnn_features_trans, images_mask[:, 0, :, :])
+
+        cnn_features_trans =cnn_features_trans + pos
+
+        word = ops.ones([batch_size, 1], dtype=ms.int64)
+        word = self.squeeze(axis=1)
+
+        for i in range(num_steps):
+            word_embedding = self.embedding(word)
+            _, hidden = self.word_input_gru(word_embedding, hidden)
+            word_context_vec, _, word_alpha_sum = self.word_attention(
+                cnn_features,
+                cnn_features_trans,
+                hidden,
+                word_alpha_sum,
+                images_mask
+            )
+
+            current_state = self.word_state_weight(hidden)
+            word_weight_embedding = self.word_embedding_weight(word_embedding)
+            word_context_weighted = self.word_context_weight(word_context_vec)
+
+            if self.dropout_prob:
+                word_out_state = self.dropout(
+                    current_state
+                    + word_weight_embedding
+                    + word_context_weighted
+                    + counting_context_weighted
+                )
+            else:
+                word_out_state = (
+                    current_state
+                    + word_weight_embedding
+                    + word_context_weighted
+                    + counting_context_weighted
+                )
+
+            word_prob = self.word_convert(word_out_state)
+            word_probs[:, i] = word_prob
+
+            if self.is_train:
+                word = labels[:, i]
+            else:
+                word = word_prob.argmax(1)
+                word = ops.multiply(
+                    word, labels[:, i]
+                )
+
+        return word_probs
+
+
+    def init_hidden(self, features, feature_mask):
+        average = ops.sum(
+            ops.sum(features * feature_mask, dim=-1), dim=-1
+        ) / ops.sum((ops.sum(feature_mask, dim=-1)), dim=-1)
+        average = self.init_weight(average)
+        return ops.tanh(average)
 
 
 """
