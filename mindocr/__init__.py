@@ -5,6 +5,7 @@ from .metrics import *
 from .models import *
 from .postprocess import *
 from .utils import *
+from .core import *
 from .version import __version__
 
 __all__ = []
