@@ -102,32 +102,19 @@ MindOCR CoreModel模块
 ### 2.1 软件系统上下文定义
 安装的环境要求：同 MindSpore OCR 安装的环境要求相同。
 
-如图1所示，原有系统在进行图像检测识别时，通常是通过命令行执行tools/infer/text目录下的predict_sysytem脚本，通过config获取命令行参数后，调用predict_det与predict_rec分别进行检测与识别，图像检测与推理模型等主体代码存放在mindocr目录下。
+如图1所示，原有项目进行mindocr目录下模型推理时，需要调用tools目录下的工具脚本，如在进行图像检测识别时，需通过命令行执行tools/infer/text目录下的predict_sysytem脚本。
+新增的MindOCR CoreModel模块在mindocr目录下，其中包含了CoreModel等抽象类及其相关的组件。新增模块对原有tools功能无影响。
 ```mermaid
 graph TD
     A[MindSpore OCR 仓库]
-    A --> C[tools 目录]
-    A --> B[mindocr 目录]
-
-```
-<p align="center">
-  <em> 图1. MindOCR现有目录结构 </em>
-</p>
-
-如图2，新增的OCRCore模块在mindocr目录下，其中包含了CoreModel等抽象类及其相关的组件。新增模块对原有tools功能无影响。
-
-```mermaid
-graph TD
-    A[MindSpore OCR 仓库]
-    B --> E[OCRCore module]
+    B --> E[MindOCR CoreModel module]
     A --> C[tools 目录]
     A --> G[mindviewer 目录]
     A --> B[mindocr 目录]
 ```
 <p align="center">
-  <em> 图2. xxxx目录结构 </em>
+  <em> 图1. MindOCR目录结构 </em>
 </p>
-
 
 ### 2.2 设计约束
 #### 2.2.1 遵循标准
@@ -150,10 +137,10 @@ MacOS：10.15/11.3
 ---
 ## 3.1 总体结构
 
-OCR Core的整体架构如图所示
+MindOCR CoreModel模块整体架构如下图所示
 ```mermaid
 graph LR
-    subgraph OCR Core
+    subgraph MindOCR CoreModel Module
     A[CoreModel]
     B[DetModel]
     C[RecModel]
@@ -169,6 +156,9 @@ graph LR
     F --> A
     G --> A
 ```
+<p align="center">
+  <em> 图2. MindOCR CoreModel模块总体结构 </em>
+</p>
 
 ## 3.2 分解描述
 + CoreModel：
@@ -188,6 +178,8 @@ graph LR
 
 
 ## 3.3 运行设计
+
+1、原有项目运行流程
 
 当前（原有）运行流程如下图所示（以文本检测识别任务为例）。predict_system为文字检测识别调用工具，用户通过调用该入口工具进入TextOCR流程，该流程首先通过predict_det（检测入口）运行mindocr中的文字检测模型，再将检测结果传入predict_rec（识别入口）中，识别模块调用mindocr中的文字识别模型最终输出结果。
 对于不同的任务，用户需要调用该任务特定的执行工具，缺少统一运行入口。
@@ -218,6 +210,8 @@ graph LR
 <p align="center">
   <em> 图3. 原有文字识别运行流程 </em>
 </p>
+
+2、新增MindOCR CoreModel模块后运行流程
 
 通过OCRCore模块的设计，将原有分散的推理、训练、评估流程进行了统一，开发者在导入包后可直接通过调用接口进行模型调用，也可利用接口自行开发模型。运行流程图如下：
 
