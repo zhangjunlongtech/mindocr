@@ -4,7 +4,7 @@
 | 2024-08-19 | 1.0          |              |        | zhangjunlong
 待更新补充
 ## 前言
----
+
 MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的OCR开源工具包，集成文本检测、文本识别等业界主流算法模型，并提供端到端的应用工具，帮助用户快速开发OCR领域模型，满足用户通用OCR场景与复杂文档分析场景的生产落地需求。
 
 围绕MindOCR的产品定位，本人的工作范围包括但不限于：
@@ -18,7 +18,7 @@ MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的
 由此，本人重点工作项如下图黄色模块所示：
 
 <p align="center">
-  <img src="https://github.com/zhangjunlongtech/mindocr/blob/coremodel/mindocr/core/img/mindocr_todepic.jpg?raw=true
+  <img src="https://gitee.com/junlong1/testBag/raw/master/mindocr_material/mindocr_todepic.jpg
   " width=640 />
 </p>
 <p align="center">
@@ -30,26 +30,44 @@ MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的
 本文档主要围绕图1中的coremodel模块展开。coremodel模块属于通用OCR系统基础库下的子模块，旨在提升MindOCR开发与使用的易用性，提升套件使用的便捷性，降低套件开发的复杂度，使MindOCR套件更好服务于生产落地需求。本文将从背景与目的、上下文定义、总体结构、模块设计几个层面进行描述。
 
 ## 一、简介
--------
+
 ### 1.1 背景
 
-1、调用入口多，使用复杂度高
+图2为MindOCR整体组件图。如图所示，MindOCR项目主要包括mindocr库、tools库、configs库三个模块。用户在调用模型进行推理时，不能直接调用mindocr库，而需要调用tools库中对应的predict模块，每个predict模块负责执行不同的推理任务。同样地，用户在进行模型训练与评估时，也不能直接调用mindocr库，而需要调用tools库中的train或eval模块，再通过该模块调用configs目录下的配置文件，获取配置参数后进行训练或推理。
 
-当前MindOCR支持Det、Rec、KIE、Layout、Table等多种模型的推理、训练与评估任务，对于各类任务推理分别需调用不同的推理脚本（如`predict_det`, `predict_rec`, `predict_ser`, `predict_system`等），而对于训练与评估，同样需要分别调用对应的训练与评估脚本。随着MindOCR模型库和新功能的支持（如智能文档分析系统），大量不同的调用入口将给开发者的使用带来较高的复杂度，且开发者在安装mindocr包后无法直接调用API进行训练、评估、推理，这将导致用户开发的快速性与便捷性不足，亟需得到改善。
+<p align="center">
+  <img src="https://gitee.com/junlong1/testBag/raw/master/mindocr_material/mindocr_cmpdia_old.jpg
+  " width=640 />
+</p>
+<p align="center">
+  <em> 图2. MindOCR原始整体组件图 </em>
+</p>
 
-我们希望用户可以基于统一的类对象去实现各类任务（如模型加载、推理、训练与评估），用户在安装mindocr后可直接调用几行API即可进行推理、训练、评估，降低用户使用复杂度，提升用户开发的快速性与便捷性。
+由于运行mindocr库需要依赖于tools库以及configs库，故MindOCR难以通过导入依赖包与调用接口的方式进行使用，存在使用复杂度高、开发自由度小、处理灵活性不足等情况，难以满足生产落地需求：
 
-2、用户开发自由度不足
+1、运行入口不统一，用户使用复杂度高
 
-当前MindOCR在模型训练和推理时，为了调用tools目录下的推理训练脚本通常需要将项目全量clone至本地，而无法通过导入mindocr包后直接调用。当用户需要开发自己的模型或更换部分模块/功能时，也需要将整个mindocr项目全量clone至本地进行模型迁移式开发。
+目前MindOCR支持Det、Rec、KIE、Layout、Table等多种模型的推理、训练与评估任务，对于不同推理任务分别需调用各自对应的推理脚本（如`predict_det`, `predict_rec`, `predict_ser`等）；而对于训练与评估，同样需要分别调用对应的训练与评估脚本。随着MindOCR模型库和新功能的支持（如智能文档分析系统），大量不同的调用入口将给开发者的使用带来较高的复杂度，亟需得到改善。
 
-我们希望通过设计一个抽象类，开发者在pip安装导包后，仅需通过提供的API接口写入自己的私有模型或组件即可完成开发，以此提高用户在开发过程中的自由度。
+我们希望用户可以基于统一的类对象去实现各类任务（如模型加载、推理、训练与评估），用户安装mindocr后可通过统一的接口或命令进行推理、训练、评估，由此降低用户使用复杂度。
 
-3、缺少输入图像前置处理模块，灵活性不足
+2、运行mindocr库依赖tools、configs库，用户使用的便捷性不足
+
+目前MindOCR在运行推理、训练、评估任务时，需要依赖于tools与configs库，因此须将项目全量clone至本地，无法在导入mindocr包后直接通过python调用，这将导致用户使用的快速性与便捷性不足。
+
+我们希望运行mindocr库不需要依赖其他库外组件，用户安装mindocr后通过几行python命令即可进行推理、训练、评估，由此提升用户使用的快速性与便捷性。
+
+3、未提供用户开发接口，用户开发自由度不足
+
+由于目前MindOCR未提供用户开发接口，当用户开发自己的模型或更换部分模块/功能时，需要将MindOCR项目全量clone至本地，按照mindocr各组件逻辑进行“模型迁移式”开发，这将导致用户开发自由度不足。
+
+我们希望通过设计统一的抽象接口，开发者在安装并导入mindocr后，仅需通过提供的接口实现自己的私有模型或其他所需组件即可完成特定任务的开发，以此提高用户在开发过程中的自由度。
+
+4、缺少输入图像前置处理模块，灵活性不足
 
 MindOCR当前缺少对输入图像的预处理模块，如格式转化、大图切片、透明填充、图像二值化、颜色反转、角度调整、批量推理等。
 
-我们希望用户在输入图像时可根据自身需要对输入进行处理，以提高用户使用精度。
+我们希望用户在输入图像时可根据自身需要对输入进行处理，以提高用户使用精度与输入处理的灵活性。
 
 
 ### 1.2 目的
@@ -57,6 +75,14 @@ MindOCR当前缺少对输入图像的预处理模块，如格式转化、大图�
 当前MindOCR存在模型推理、训练、评估时入口复杂，且无法通过API的形式调用等问题。且开发者无法以实现接口的形式实现自己私有的模型或特定的功能。
 
 针对这些问题，本文档进行了MindOCR CoreModel模块的设计，通过统一的CoreModel类抽象出模型加载、数据前处理、数据后处理、推理、训练、评估等方法。开发者可以基于已有的API对mindocr库中已有的模型进行训练、推理，也可基于抽象类接口实现自己的模型训练与推理。
+
+<p align="center">
+  <img src="https://gitee.com/junlong1/testBag/raw/master/mindocr_material/mindocr_cmpdia_new.jpg
+  " width=640 />
+</p>
+<p align="center">
+  <em> 图3. coremodel设计方案组件图 </em>
+</p>
 
 除此之外，本设计文档还提供了图片预处理工具。
 
