@@ -6,7 +6,7 @@ import numpy as np
 __dir__ = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "../../../")))
 
-from mindocr import build_postprocess
+from ..postprocess import build_postprocess
 
 
 class Postprocessor(object):
@@ -46,7 +46,7 @@ class Postprocessor(object):
             self.rescale_internally = True
             self.round = True
         elif task == "rec":
-            rec_char_dict_path = (
+            rec_char_0dict_path = (
                 rec_char_dict_path or "mindocr/utils/dict/ch_dict.txt"
                 if algo in ["CRNN_CH", "SVTR_PPOCRv3_CH"]
                 else rec_char_dict_path

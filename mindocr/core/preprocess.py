@@ -6,8 +6,8 @@ __dir__ = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.abspath(os.path.join(__dir__, "../../../")))
 
 
-from mindocr.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from mindocr.data.transforms import create_transforms, run_transforms
+from ..data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
+from ..data.transforms import create_transforms, run_transforms
 
 _logger = logging.getLogger("mindocr")
 
@@ -20,16 +20,12 @@ class Preprocessor(object):
             limit_type = kwargs.get("det_limit_type", "min")
 
             pipeline = [
-                {"DecodeImage": {"img_mode": "RGB", "keep_ori": True, "to_float32": False}},
-                # {'DetResize':
-                #     {'target_size': [732, 1280],
-                #      'keep_ratio': False,
-                #      'target_limit_side': None, #target_limit_side, # TODO: add to arg
-                #      'limit_type': None, #limit_type,
-                #      'padding': False,
-                #      'force_divisable': True,
-                #      'divisor': 32
-                #     }},
+                {   "DecodeImage": {
+                        "img_mode": "RGB", 
+                        "keep_ori": True, 
+                        "to_float32": False
+                    }
+                },
                 {
                     "DetResize": {
                         "target_size": None,  # [ 1152, 2048 ]
@@ -126,21 +122,21 @@ class Preprocessor(object):
                     f"is not optimal, which should be [{target_height}, {target_width}] under batch mode = {batch_mode}"
                 )
 
-            _logger.info(
-                f"Pick optimal preprocess hyper-params for rec algo {algo}:\n"
-                + "\n".join(
-                    [
-                        f"{k}:\t{str(v)}"
-                        for k, v in dict(
-                            target_height=target_height,
-                            target_width=target_width,
-                            padding=padding,
-                            keep_ratio=keep_ratio,
-                            norm_before_pad=norm_before_pad,
-                        ).items()
-                    ]
+                _logger.info(
+                    f"Pick optimal preprocess hyper-params for rec algo {algo}:\n"
+                    + "\n".join(
+                        [
+                            f"{k}:\t{str(v)}"
+                            for k, v in dict(
+                                target_height=target_height,
+                                target_width=target_width,
+                                padding=padding,
+                                keep_ratio=keep_ratio,
+                                norm_before_pad=norm_before_pad,
+                            ).items()
+                        ]
+                    )
                 )
-            )
 
             pipeline = [
                 {"DecodeImage": {"img_mode": "RGB", "keep_ori": True, "to_float32": False}},
