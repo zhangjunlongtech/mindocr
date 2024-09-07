@@ -25,7 +25,7 @@ MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的
   <em> 图1. 重点工作示意图 </em>
 </p>
 
-其中，整图为当前MindOCR工作全景图，绿色模块为当前MindOCR套件已支持的部分，黄色模块与灰色模块为待重点开展的工作，其中黄色模块为本人重点工作。
+上图整图为当前MindOCR工作全景图，绿色模块为当前MindOCR套件已支持的部分，黄色模块与灰色模块为待重点开展的工作，其中黄色模块为本人重点工作。
 
 本文档主要围绕图1中的coremodel模块展开。coremodel模块属于通用OCR系统基础库下的子模块，旨在提升MindOCR开发与使用的易用性，提升套件使用的便捷性，降低套件开发的复杂度，使MindOCR套件更好服务于生产落地需求。本文将从背景与目的、上下文定义、总体结构、模块设计几个层面进行描述。
 
@@ -72,9 +72,14 @@ MindOCR当前缺少对输入图像的预处理模块，如格式转化、大图�
 
 ### 1.2 目的
 
-当前MindOCR存在模型推理、训练、评估时入口复杂，且无法通过API的形式调用等问题。且开发者无法以实现接口的形式实现自己私有的模型或特定的功能。
+如上所述，由于MindOCR运行入口未统一，需要依赖mindocr库外部模块，且未提供用户开发接口，存在使用复杂度高、开发便捷性与自由度不足等问题，亟需得到改善。
 
-针对这些问题，本文档进行了MindOCR CoreModel模块的设计，通过统一的CoreModel类抽象出模型加载、数据前处理、数据后处理、推理、训练、评估等方法。开发者可以基于已有的API对mindocr库中已有的模型进行训练、推理，也可基于抽象类接口实现自己的模型训练与推理。
+针对这些问题，本文档希望通过coremodel模块的设计进行解决。如下图所示，coremodel模块在mindocr库下集成了各组件功能，通过CoreModel类抽象出模型加载、数据前处理、后处理、推理、训练、评估等方法，其作用包括但不限于
+1. 开发者可通过CoreModel类或相应子类即可进行推理、训练、评估等任务。
+2. CoreModel模块将各组件功能集成与mindocr库中不需要依赖外部模块，开发者在安装与导入mindocr包后调用接口即可使用。
+3. 开发者也可通过重写或实现coremodel接口来构建私有的模型训练、推理等相关任务，无须通过clone整个项目进行开发。
+
+除此之外，本文档还提供了图片预处理工具的方案。
 
 <p align="center">
   <img src="https://gitee.com/junlong1/testBag/raw/master/mindocr_material/mindocr_cmpdia_new.jpg
@@ -84,7 +89,7 @@ MindOCR当前缺少对输入图像的预处理模块，如格式转化、大图�
   <em> 图3. coremodel设计方案组件图 </em>
 </p>
 
-除此之外，本设计文档还提供了图片预处理工具。
+
 
 1、当前推理调用方式如下：
 ```
@@ -143,7 +148,7 @@ model.eval(data_path, ckpt_path, **args)
 
 ### 1.4 范围
 #### 1.4.1 软件名称
-MindOCR CoreModel模块
+MindOCR coremodel module
 #### 1.4.2 软件功能
 1. 用户通过统一API接口实现模型的推理、训练、评估等；
 2. 用户通过抽象类的API接口实现自有模块的开发；
@@ -159,7 +164,7 @@ MindOCR CoreModel模块
 ```mermaid
 graph TD
     A[MindSpore OCR 仓库]
-    B --> E[MindOCR CoreModel module]
+    B --> E[coremodel module]
     A --> C[tools 目录]
     A --> G[mindviewer 目录]
     A --> B[mindocr 目录]
@@ -191,22 +196,36 @@ MacOS：10.15/11.3
 
 MindOCR CoreModel模块整体架构如下图所示
 ```mermaid
-graph LR
-    subgraph MindOCR CoreModel Module
-    A[CoreModel]
-    B[DetModel]
-    C[RecModel]
-    D[KIEModel]
-    E[CLSModel]
-    F[TabModel]
-    G[LayModel]
+graph TB
+
+    subgraph coremodel module
+      subgraph L[model entrypoint]
+        A[CoreModel]
+        B[DetModel]
+        C[RecModel]
+        D[KIEModel]
+        E[CLSModel]
+        F[TabModel]
+        G[LayModel]
+      end
+
+      subgraph M[model tools]
+        H[preprocess]
+        I[postprocess]
+        J[imgFormatter]
+        K[utils]
+      end
+
+      B --> A
+      C --> A
+      D --> A
+      E --> A
+      F --> A
+      G --> A
+      L --> M
+      
     end
-    B --> A
-    C --> A
-    D --> A
-    E --> A
-    F --> A
-    G --> A
+    
 ```
 <p align="center">
   <em> 图2. MindOCR CoreModel模块总体结构 </em>
