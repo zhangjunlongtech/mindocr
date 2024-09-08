@@ -1,8 +1,8 @@
 
 | _***日期***_ | _***修订版本***_ | _***修改章节***_ | _***修改描述***_ | _***作者***_                                            |
 | ---------- | ------------ | ------------ | ------------ | ----------------------------------------------------- |
-| 2024-08-19 | 1.0          |              |        | zhangjunlong
-待更新补充
+| 2024-08-19 | 1.0          |              |    完成初稿    | zhangjunlong
+| 2024-09-09 | 1.1          |              |    更新设计整合    | zhangjunlong
 ## 前言
 
 MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的OCR开源工具包，集成文本检测、文本识别等业界主流算法模型，并提供端到端的应用工具，帮助用户快速开发OCR领域模型，满足用户通用OCR场景与复杂文档分析场景的生产落地需求。
@@ -18,7 +18,7 @@ MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的
 由此，本人重点工作项如下图黄色模块所示：
 
 <p align="center">
-  <img src="https://gitee.com/junlong1/testBag/raw/master/mindocr_material/mindocr_todepic.jpg
+  <img src="https://temp-data.obs.cn-central-221.ovaijisuan.com/mindocr_material/mindocr_todepic.jpg
   " width=640 />
 </p>
 <p align="center">
@@ -36,7 +36,7 @@ MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的
 图2为MindOCR整体组件图。如图所示，MindOCR项目主要包括mindocr库、tools库、configs库三个模块。用户在调用模型进行推理时，不能直接调用mindocr库，而需要调用tools库中对应的predict模块，每个predict模块负责执行不同的推理任务。同样地，用户在进行模型训练与评估时，也不能直接调用mindocr库，而需要调用tools库中的train或eval模块，再通过该模块调用configs目录下的配置文件，获取配置参数后进行训练或推理。
 
 <p align="center">
-  <img src="https://gitee.com/junlong1/testBag/raw/master/mindocr_material/mindocr_cmpdia_old.jpg
+  <img src="https://temp-data.obs.cn-central-221.ovaijisuan.com/mindocr_material/mindocr_cmpdia_old.jpg
   " width=640 />
 </p>
 <p align="center">
@@ -82,16 +82,18 @@ MindOCR当前缺少对输入图像的预处理模块，如格式转化、大图�
 除此之外，本文档还提供了图片预处理工具的方案。
 
 <p align="center">
-  <img src="https://gitee.com/junlong1/testBag/raw/master/mindocr_material/mindocr_cmpdia_new.jpg
+  <img src="https://temp-data.obs.cn-central-221.ovaijisuan.com/mindocr_material/mindocr_cmpdia_new.jpg
   " width=640 />
 </p>
 <p align="center">
   <em> 图3. coremodel设计方案组件图 </em>
 </p>
 
+通过coremodel模块，mindocr新增但不限于如下调用方式：
 
+1、模型推理
 
-1、当前推理调用方式如下：
+当前MindOCR推理通过调用tools库下的脚本文件运行，其调用方式如下：
 ```
 python tools/infer/text/predict_system.py --image_dir {path_to_img or dir_to_imgs}  --det_algorithm DB++  --rec_algorithm CRNN
 ```
@@ -103,12 +105,14 @@ model = RecModel(rec='CRNN', **args)
 result = model.infer(img_path, **args)
 ```
 
-2、当前训练调用方式如下：
+2、模型训练
+
+当前MindOCR训练通过调用tools库脚本以及configs库中的配置文件运行，且调用方式如下：
 ```
 python tools/train.py --config path/to/model_train_config.yaml
 ```
 
-支持CoreModel模块后，训练调用方式如下。其中，DetModel为CoreModel子类，用于实现文字检测任务。
+支持CoreModel模块后，可通过如下方式启动模型训练程序。其中，DetModel为CoreModel子类，用于实现文字检测任务。
 ```python
 from mindocr import DetModel
 model = DetModel(det='DB', **args)
@@ -132,7 +136,9 @@ model = UserModel(**args)
 model.train(data_path, ckpt_path, **args)
 ```
 
-3、当前评估流程如下：
+3、模型评估
+
+当前MindOCR通过调用tools库脚本以及configs库中的配置文件进行模型评估，使用方法如下：
 ```
 python tools/eval.py --config path/to/config.yaml
 --opt dataset_root  ckpt_load_path
@@ -144,7 +150,7 @@ model = RecModel(alg='CRNN', **args)
 model.eval(data_path, ckpt_path, **args)
 ```
 
-由此，通过MindOCR CoreModel模块下的CoreModel抽象类，将模型各行为进行统一继承，实现模型的训推一体化。
+由此，通过MindOCR coremodel模块下的CoreModel抽象类，将模型各行为进行统一，实现模型的训推一体化。
 
 ### 1.4 范围
 #### 1.4.1 软件名称
@@ -157,20 +163,31 @@ MindOCR coremodel module
 ## 二、第零层设计描述
 ---
 ### 2.1 软件系统上下文定义
-安装的环境要求：同 MindSpore OCR 安装的环境要求相同。
+安装的环境要求：同 MindOCR 安装的环境要求。
 
-如图1所示，原有项目进行mindocr目录下模型推理时，需要调用tools目录下的工具脚本，如在进行图像检测识别时，需通过命令行执行tools/infer/text目录下的predict_sysytem脚本。
-新增的MindOCR CoreModel模块在mindocr目录下，其中包含了CoreModel等抽象类及其相关的组件。新增模块对原有tools功能无影响。
+MindOCR coremodel 模块的部署视图如下所示，主要位于通用OCR模块的mindocr库中，通过mindocr库中组件的调用实现训推一体函数式调用功能。
+
+<p align="center">
+  <img src="https://temp-data.obs.cn-central-221.ovaijisuan.com/mindocr_material/mindocr_deploy.jpg
+  " width=640 />
+</p>
+<p align="center">
+  <em> 图4. MindOCR更新部署视图 </em>
+</p>
+
+
+新增的 MindOCR coremodel 模块在mindocr目录下，其中包含了CoreModel抽象类及其相关的组件。新增模块对原有tools功能无影响。
 ```mermaid
 graph TD
     A[MindSpore OCR 仓库]
     B --> E[coremodel module]
     A --> C[tools 目录]
-    A --> G[mindviewer 目录]
     A --> B[mindocr 目录]
+    A --> D[configs 目录]
+    A --> F[mindviewer 目录]
 ```
 <p align="center">
-  <em> 图1. MindOCR目录结构 </em>
+  <em> 图5. MindOCR更新目录结构 </em>
 </p>
 
 ### 2.2 设计约束
@@ -194,7 +211,7 @@ MacOS：10.15/11.3
 ---
 ## 3.1 总体结构
 
-MindOCR CoreModel模块整体架构如下图所示
+MindOCR coremodel 模块整体架构如下图所示
 ```mermaid
 graph TB
 
@@ -228,77 +245,129 @@ graph TB
     
 ```
 <p align="center">
-  <em> 图2. MindOCR CoreModel模块总体结构 </em>
+  <em> 图6. MindOCR coremodel模块总体结构 </em>
 </p>
 
 ## 3.2 分解描述
-+ CoreModel：
-模型统一抽象类，抽象出各类模型模型加载、数据前后处理、推理、训练、评估的通用方法，开发者可基于该抽象类实现自己的私有模块；
-+ DetModel：
-检测模型统一调用入口，用于文本检测相关任务;
-+ RecModel：
-识别模型统一调用入口，用于文本识别相关任务;
-+ KIEModel：
-关键信息提取模型统一调用入口，用于文本关键信息提取相关任务;
-+ CLSModel：
-文本方向分类模型统一调用入口，用于文本方向分类相关任务;
-+ TabModel：
-表格识别模型统一调用入口，用于表格识别相关任务;
-+ LayModel：
-版面分析模型统一调用入口，用于版面分析相关任务;
+1. model entrypoint模块：定义了CoreModel抽象类以及各任务子类，用户通过对应的类调用推理、训练、评估等模型方法；
+   + CoreModel：
+   模型统一抽象类，抽象出各类模型模型加载、数据前后处理、推理、训练、评估的通用方法，开发者可基于该抽象类实现自己的私有模块；
+   + DetModel：
+   检测模型统一调用入口，用于文本检测相关任务;
+   + RecModel：
+   识别模型统一调用入口，用于文本识别相关任务;
+   + KIEModel：
+   关键信息提取模型统一调用入口，用于文本关键信息提取相关任务;
+   + CLSModel：
+   文本方向分类模型统一调用入口，用于文本方向分类相关任务;
+   + TabModel：
+   表格识别模型统一调用入口，用于表格识别相关任务;
+   + LayModel：
+   版面分析模型统一调用入口，用于版面分析相关任务;
 
+2. model tools 模块：工具模块，为model entrypoint模块提供必需的运行工具或组件。
+   + preprcess：数据前处理工具
+   + postprocess：数据后处理工具
+   + imgFormatter：用于对输入图像进行预处理
+   + utils：公共工具方法模块
 
 ## 3.3 运行设计
 
-1、原有项目运行流程
-
-当前（原有）运行流程如下图所示（以文本检测识别任务为例）。predict_system为文字检测识别调用工具，用户通过调用该入口工具进入TextOCR流程，该流程首先通过predict_det（检测入口）运行mindocr中的文字检测模型，再将检测结果传入predict_rec（识别入口）中，识别模块调用mindocr中的文字识别模型最终输出结果。
-对于不同的任务，用户需要调用该任务特定的执行工具，缺少统一运行入口。
+新增MindOCR coremodel模块后运行流程如下。通过OCRCore模块的设计，将原有分散的推理、训练、评估流程进行了统一，开发者在导入包后可直接通过调用接口进行模型调用，也可利用接口自行开发模型。
 
 ```mermaid
-graph LR
-    A["Image"] --> B["predict_system"]
-    C["config"] --> B
-    B --> D
-    I --> J["Output"]
-    E <--> K["mindocr"]
-    H <--> L["mindocr"]
-  
-  subgraph TextOCR
-    subgraph Detection
-      D["PreProcessor"] --> E["TextDetector"]
-      E --> F["PostProcessor"]
-    end
+graph TB
+A0[user input]
+A[coremodel module]
+B[infer]
+C[train]
+D[eval]
+A --> b1
+A --> b2
+A --> b3
+A0 --> A
 
-    subgraph Recognition
-      F --> G["PreProcessor"]
-      G --> H["TextRecognizer"]
-      H --> I["PostProcessor"]
-    end
-  end
+subgraph B[infer]
+b1[build preprocess]
+c1[build model]
+e1[model infer]
+d1[build postprocess]
+b1 --> c1 --> d1 -->e1
+end
+
+subgraph C[train]
+b2[build preprocess]
+c2[build model]
+d2[build postprocess]
+f2[build loss]
+g2[create scheduler]
+h2[create oprtimizer]
+i2[build metric]
+j2[model train]
+b2 --> c2 --> d2 --> f2 --> g2 --> h2 --> i2 --> j2
+end
+
+subgraph D[eval]
+b3[build preprocess]
+c3[build model]
+d3[build postprocess]
+i3[build metric]
+j3[model eval]
+b3 --> c3 --> d3 --> i3 --> j3
+end
+
 
 ```
 <p align="center">
-  <em> 图3. 原有文字识别运行流程 </em>
+  <em> 图7. MindOCR coremodel模块运行流程图 </em>
 </p>
-
-2、新增MindOCR CoreModel模块后运行流程
-
-通过OCRCore模块的设计，将原有分散的推理、训练、评估流程进行了统一，开发者在导入包后可直接通过调用接口进行模型调用，也可利用接口自行开发模型。运行流程图如下：
-
-（运行流程图待补充）
 
 
 # 四、第二层设计描述
----
-## 4.1 CoreModel模块设计
+## 4.1 coremodel模块设计
 
 #### 4.1.1 总体结构
-待补充
+```mermaid
+graph TB
+  a[user input]
+  b[module output]
+  c[coremodel tools]
+  d[mindocr module]
+  e[coremodel]
 
+  subgraph e[coremodel]
+  A[load model]
+  B[preprocess]
+  C[postprocess]
+  D[infer]
+  E[train]
+  F[evaliuate]
+  end
+
+  subgraph c[coremodel tools]
+  G[PreProcessor]
+  H[PostProcessor]
+  I[ImgFormatter]
+  J[utils]
+  end
+
+  a --> A
+  a --> B
+  a --> C
+  a --> D
+  a --> E
+  a --> F
+
+  e <--> c
+  e <--> d
+  e -->b
+```
+<p align="center">
+  <em> 图8. MindOCR coremodel模块总体结构设计图 </em>
+</p>
 
 #### 4.1.2 模块分解描述
-待补充
+当前coremodel模块向用户提供获取模型实例、数据前处理实例、数据后处理实例、进行模型推理、训练与评估等功能与接口。coremodel模块通过调用mindocr中各功能组件与coreodel tools中的工具来实现。
  
 
 #### 4.1.3 数据实体描述
@@ -308,6 +377,7 @@ graph LR
 classDiagram
   class CoreModel {
     +mode: int
+    +algo：str
     +args: dict
     +preprocessor: PreProcessor
     +postprocessor: PostProcessor
@@ -346,59 +416,6 @@ classDiagram
     +__call__(): void
   }
 
-  CoreModel <|-- DetModel
-  CoreModel <|-- RecModel
-  CoreModel <|-- CLSModel
-  CoreModel <|-- KIEModel
-  CoreModel <|-- TabModel
-  CoreModel <|-- LayModel
-  TextModel *-- DetModel
-  TextModel *-- RecModel
-  CoreModel *-- PreProcessor
-  CoreModel *-- PostProcessor
-```
-
-<p align="center">
-  <em> 图xxx </em>
-</p>
-
-CoreModel抽象类有如下公共变量：
-
-- mode：运行模式，0为graph模式，1为pynative模式
-- args：配置参数，用户自定义或系统默认值
-- preprocessor：前处理过程
-- postprocessor：后处理过程
-- __init__()：类的初始化方法
-- load_model()：模型加载，用户可自定义
-- preprocess()：模型前处理过程，用户可自定义
-- infer()：模型推理过程，用户可自定义
-- train()：模型训练方法，用户可自定义
-- eval(): 模型评估方法，用户可自定义
-- jsonify(): 将输出转为json格式
-
-
-#### 4.1.4 依赖性描述
-
-外部第三方依赖库：opencv、numpy
-
-#### 4.1.5 接口使用描述
-
-待补充
-
-## 4.2 ImgFormatter模块设计
-
-#### 4.2.1 总体结构
-待补充
-
-
-#### 4.2.2 模块分解描述
-待补充
-
-
-#### 4.2.3 数据实体描述
-
-```mermaid
-classDiagram 
   class ImgFormatter{
     +cls: bool
     +bin: bool
@@ -413,11 +430,37 @@ classDiagram
     +slice_img(): void
   }
 
+  CoreModel <|-- DetModel
+  CoreModel <|-- RecModel
+  CoreModel <|-- CLSModel
+  CoreModel <|-- KIEModel
+  CoreModel <|-- TabModel
+  CoreModel <|-- LayModel
+  TextModel *-- DetModel
+  TextModel *-- RecModel
+  CoreModel *-- PreProcessor
+  CoreModel *-- PostProcessor
+  CoreModel *-- ImgFormatter
 ```
 
 <p align="center">
-  <em> 图xxx </em>
+  <em> 图9. MindOCR coremodel模块类图 </em>
 </p>
+
+CoreModel抽象类有如下公共变量：
+
+- `mode`：运行模式，0为graph模式，1为pynative模式
+- `algo`：算法模型名
+- `args`：配置参数，用户自定义或系统默认值
+- `preprocessor`：前处理过程
+- `postprocessor`：后处理过程
+- `init()`：类的初始化方法
+- `load_model()`：模型加载，用户可自定义
+- `preprocess()`：模型前处理过程，用户可自定义
+- `infer()`：模型推理过程，用户可自定义
+- `train()`：模型训练方法，用户可自定义
+- `eval()`: 模型评估方法，用户可自定义
+- `jsonify()`: 将输出转为json格式
 
 ImgFormatter类有如下公共变量：
 
@@ -434,9 +477,11 @@ ImgFormatter类有如下公共变量：
 - `slice_img()`: 图像切片滑动窗口处理方法
 
 
-#### 4.2.4 依赖性描述
+#### 4.1.4 依赖性描述
 
 外部第三方依赖库：opencv、numpy
 
-#### 4.2.5 接口使用描述
-待补充
+#### 4.1.5 接口使用描述
+
+coremodel接口使用方法描述包括模型训练、推理与评估，详细参见本文1.2节
+
