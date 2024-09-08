@@ -18,7 +18,7 @@ MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的
 由此，本人重点工作项如下图黄色模块所示：
 
 <p align="center">
-  <img src="https://temp-data.obs.cn-central-221.ovaijisuan.com/mindocr_material/mindocr_todepic.jpg
+  <img src="https://github.com/zhangjunlongtech/mindocr/blob/coremodel/mindocr/core/img/todo.png?raw=true
   " width=640 />
 </p>
 <p align="center">
