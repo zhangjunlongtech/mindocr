@@ -158,7 +158,7 @@ MindOCR coremodel module
 
 MindOCR coremodel 模块的部署视图如下所示，主要位于通用OCR模块的mindocr库中，通过mindocr库中组件的调用实现训推一体函数式调用功能。
 
-![](img/deploy.png)
+<!-- ![](img/deploy.png) -->
 <p align="center">
   <em> 图4. MindOCR更新部署视图 </em>
 </p>
