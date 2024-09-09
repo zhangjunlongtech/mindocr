@@ -19,7 +19,7 @@ MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的
 
 ![](img/todo.png)
 <p align="center">
-  <em> 图1. 重点工作示意图(待调整) </em>
+  <em> 图1. 重点工作业务模块示意图(待调整) </em>
 </p>
 
 上图整图为当前MindOCR工作全景图，绿色模块为当前MindOCR套件已支持的部分，黄色模块与灰色模块为待重点开展的工作，其中黄色模块为本人重点工作。
@@ -77,7 +77,7 @@ MindOCR当前缺少对输入图像的预处理模块，如格式转化、大图�
 
 ![](img/cmp_new.png)
 <p align="center">
-  <em> 图3. coremodel设计方案组件图() </em>
+  <em> 图3. coremodel设计方案组件图 </em>
 </p>
 
 通过coremodel模块，mindocr新增但不限于如下调用方式：
