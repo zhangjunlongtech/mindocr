@@ -17,10 +17,7 @@ MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的
 
 由此，本人重点工作项如下图黄色模块所示：
 
-<p align="center">
-  <img src="https://github.com/zhangjunlongtech/mindocr/blob/coremodel/mindocr/core/img/todo.png?raw=true
-  " width=640 />
-</p>
+![](img/todo.png)
 <p align="center">
   <em> 图1. 重点工作示意图 </em>
 </p>
@@ -35,10 +32,7 @@ MindSpore OCR（以下简称MindOCR）套件是基于MindSpore AI框架开发的
 
 图2为MindOCR整体组件图。如图所示，MindOCR项目主要包括mindocr库、tools库、configs库三个模块。用户在调用模型进行推理时，不能直接调用mindocr库，而需要调用tools库中对应的predict模块，每个predict模块负责执行不同的推理任务。同样地，用户在进行模型训练与评估时，也不能直接调用mindocr库，而需要调用tools库中的train或eval模块，再通过该模块调用configs目录下的配置文件，获取配置参数后进行训练或推理。
 
-<p align="center">
-  <img src="https://temp-data.obs.cn-central-221.ovaijisuan.com/mindocr_material/mindocr_cmpdia_old.jpg
-  " width=640 />
-</p>
+![](img/cmp_old.png)
 <p align="center">
   <em> 图2. MindOCR原始整体组件图 </em>
 </p>
@@ -81,10 +75,7 @@ MindOCR当前缺少对输入图像的预处理模块，如格式转化、大图�
 
 除此之外，本文档还提供了图片预处理工具的方案。
 
-<p align="center">
-  <img src="https://temp-data.obs.cn-central-221.ovaijisuan.com/mindocr_material/mindocr_cmpdia_new.jpg
-  " width=640 />
-</p>
+![](img/cmp_new.png)
 <p align="center">
   <em> 图3. coremodel设计方案组件图 </em>
 </p>
@@ -167,10 +158,7 @@ MindOCR coremodel module
 
 MindOCR coremodel 模块的部署视图如下所示，主要位于通用OCR模块的mindocr库中，通过mindocr库中组件的调用实现训推一体函数式调用功能。
 
-<p align="center">
-  <img src="https://temp-data.obs.cn-central-221.ovaijisuan.com/mindocr_material/mindocr_deploy.jpg
-  " width=640 />
-</p>
+![](img/deploy.png)
 <p align="center">
   <em> 图4. MindOCR更新部署视图 </em>
 </p>
@@ -214,6 +202,8 @@ MacOS：10.15/11.3
 MindOCR coremodel 模块整体架构如下图所示
 ```mermaid
 graph TB
+    L[model entrypoint]
+    M[model tools]
 
     subgraph coremodel module
       subgraph L[model entrypoint]
@@ -277,44 +267,48 @@ graph TB
 
 ```mermaid
 graph TB
-A0[user input]
-A[coremodel module]
-B[infer]
-C[train]
-D[eval]
-A --> b1
-A --> b2
-A --> b3
-A0 --> A
+  A0[user input]
+  A[coremodel module]
+  B[infer]
+  C[train]
+  D[eval]
+  A --> b1
+  A --> b2
+  A --> b3
+  A0 --> A
+  b1 --> c1 --> d1 -->e1
+  b2 --> c2 --> d2 --> f2 --> g2 --> h2 --> i2 --> j2
+  b3 --> c3 --> d3 --> i3 --> j3
 
-subgraph B[infer]
-b1[build preprocess]
-c1[build model]
-e1[model infer]
-d1[build postprocess]
-b1 --> c1 --> d1 -->e1
-end
 
-subgraph C[train]
-b2[build preprocess]
-c2[build model]
-d2[build postprocess]
-f2[build loss]
-g2[create scheduler]
-h2[create oprtimizer]
-i2[build metric]
-j2[model train]
-b2 --> c2 --> d2 --> f2 --> g2 --> h2 --> i2 --> j2
-end
+  subgraph B[infer]
+    b1[build preprocess]
+    c1[build model]
+    e1[model infer]
+    d1[build postprocess]
 
-subgraph D[eval]
-b3[build preprocess]
-c3[build model]
-d3[build postprocess]
-i3[build metric]
-j3[model eval]
-b3 --> c3 --> d3 --> i3 --> j3
-end
+  end
+
+  subgraph C[train]
+    b2[build preprocess]
+    c2[build model]
+    d2[build postprocess]
+    f2[build loss]
+    g2[create scheduler]
+    h2[create oprtimizer]
+    i2[build metric]
+    j2[model train]
+
+  end
+
+  subgraph D[eval]
+    b3[build preprocess]
+    c3[build model]
+    d3[build postprocess]
+    i3[build metric]
+    j3[model eval]
+
+  end
 
 
 ```
