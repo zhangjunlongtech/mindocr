@@ -31,6 +31,7 @@ from mindocr.utils.logger import set_logger
 from mindocr.utils.visualize import visualize  # noqa
 
 logger = logging.getLogger("mindocr")
+ms.set_context(jit_config={"jit_level": "O0"})
 
 
 class TextSystem(object):
@@ -163,7 +164,7 @@ def main():
     # uncomment it to quick test the infer FPS
     # img_paths = img_paths[:10]
 
-    ms.set_context(mode=args.mode)
+    ms.set_context(mode=args.mode, jit_config={"jit_level": "O0"})
 
     # init text system with detector and recognizer
     text_spot = TextSystem(args)

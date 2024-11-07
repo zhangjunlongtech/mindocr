@@ -20,7 +20,7 @@ def str2bool(v):
 def create_parser():
     parser = argparse.ArgumentParser(description="Inference Config Args")
     # params for prediction engine
-    parser.add_argument("--mode", type=int, default=0, help="0 for graph mode, 1 for pynative mode ")  # added
+    parser.add_argument("--mode", type=int, default=1, help="0 for graph mode, 1 for pynative mode ")  # added
 
     # params for text detector
     parser.add_argument("--image_dir", type=str, required=True, help="image path or image directory")
@@ -78,7 +78,7 @@ def create_parser():
         "--rec_algorithm",
         type=str,
         default="CRNN",
-        choices=["CRNN", "RARE", "CRNN_CH", "RARE_CH", "SVTR", "SVTR_PPOCRv3_CH"],
+        choices=["CRNN", "RARE", "CRNN_CH", "RARE_CH", "SVTR", "SVTR_PPOCRv3_CH","CAN"],
         help="recognition algorithm",
     )
     parser.add_argument(

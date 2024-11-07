@@ -76,6 +76,14 @@ class Postprocessor(object):
                     use_space_char=False,
                 )
 
+            elif algo.startswith("CAN"):
+                print("mark postprocess============================================================")
+                postproc_cfg = dict(
+                    name="CANLabelDecode",
+                    character_dict_path=rec_char_dict_path,
+                    use_space_char=False,
+                )
+
             else:
                 raise ValueError(f"No postprocess config defined for {algo}. Please check the algorithm name.")
         elif task == "ser":
@@ -137,6 +145,7 @@ class Postprocessor(object):
         elif self.task == "rec":
             output = self.postprocess(pred)
             return output
+
         elif self.task == "ser":
             output = self.postprocess(
                 pred, segment_offset_ids=kwargs.get("segment_offset_ids"), ocr_infos=kwargs.get("ocr_infos")
