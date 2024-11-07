@@ -36,6 +36,8 @@ from mindocr.utils.seed import set_seed
 from mindocr.utils.train_step_wrapper import TrainOneStepWrapper
 
 logger = logging.getLogger("mindocr.train")
+profiler = ms.Profiler(output_path="/home/nginx/work/zhangjunlong/testlog", profile_memory=True)
+# ms.set_context(mode=ms.PYNATIVE_MODE, pynative_synchronize=True)
 
 
 def main(cfg):
