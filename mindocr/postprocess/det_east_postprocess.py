@@ -1,4 +1,5 @@
 import math
+import platform
 
 import numpy as np
 
@@ -9,7 +10,10 @@ from .det_base_postprocess import DetBasePostprocess
 try:
     from lanms import merge_quadrangle_n9
 except ImportError:
-    from .nms_py.lanms_py import merge_quadrangle_n9
+    if platform.system() == "Windows":
+        from .nms_py.lanms_py import merge_quadrangle_n9
+    else:
+        raise ImportError("can not import lanms or lanms_win")
 
 __all__ = ["EASTPostprocess"]
 

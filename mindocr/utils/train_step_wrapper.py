@@ -1,5 +1,6 @@
 """Train step wrapper supporting setting drop overflow update, ema etc"""
 import mindspore as ms
+import sys
 import mindspore.context as context
 from mindspore import Parameter, Tensor, nn, ops
 from mindspore.common import RowTensor, mutable

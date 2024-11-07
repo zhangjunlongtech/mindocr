@@ -112,7 +112,10 @@ class Evaluator:
                 inputs = [data[0]]
 
             if self.label_indices is not None:
-                gt = [data[x] for x in self.label_indices]
+                if len(self.label_indices)==1:
+                    gt = data[self.label_indices[0]] 
+                else:
+                    gt = [data[x] for x in self.label_indices]
             else:
                 gt = data[1:]
 

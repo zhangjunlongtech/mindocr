@@ -57,6 +57,9 @@ def build_model(name_or_config: Union[str, dict], **kwargs):
         is_customized_model = False
     elif isinstance(name_or_config, dict):
         network = BaseModel(name_or_config)
+        # for name, param in network.parameters_and_names():
+            # print(f"{name}  {param.shape}")
+            # print(f"{name}")
     else:
         raise ValueError("Type error for config")
 

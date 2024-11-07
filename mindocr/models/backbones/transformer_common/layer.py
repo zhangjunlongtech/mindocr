@@ -11,9 +11,9 @@ from .activation import act_fn
 
 def finfo(dtype):
     if dtype == mstype.float32:
-        return Tensor(np.finfo(np.float32).min, mstype.float32)
+        return np.finfo(np.float32).min
     elif dtype == mstype.float16:
-        return Tensor(np.finfo(np.float16).min, mstype.float16)
+        return np.finfo(np.float16).min
     else:
         raise TypeError(f"For 'finfo', the input dtype should be float32 or float16, bug got {dtype}")
 

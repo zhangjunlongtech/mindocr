@@ -36,7 +36,6 @@ supported_postprocess = (
     + kie_ser_postprocess.__all__
     + kie_re_postprocess.__all__
     + layout_postprocess.__all__
-    + table_postprocess.__all__
 )
 
 

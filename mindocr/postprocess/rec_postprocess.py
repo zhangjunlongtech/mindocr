@@ -15,6 +15,7 @@ __all__ = [
     "RecMasterLabelDecode",
     "VisionLANPostProcess",
     "SARLabelDecode",
+    "CANLabelDecode",
 ]
 _logger = logging.getLogger(__name__)
 
@@ -557,6 +558,7 @@ class BaseRecLabelDecode(object):
             self.character_str = "0123456789abcdefghijklmnopqrstuvwxyz"
             dict_character = list(self.character_str)
         else:
+            print("building owned dict & character... ...")
             with open(character_dict_path, "rb") as fin:
                 lines = fin.readlines()
                 for line in lines:
@@ -650,3 +652,34 @@ class CTCLabelDecode(BaseRecLabelDecode):
     def add_special_char(self, dict_character):
         dict_character = ["blank"] + dict_character
         return dict_character
+
+
+class CANLabelDecode(BaseRecLabelDecode):
+    """Convert between latex-symbol and symbol-index"""
+
+    def __init__(self, character_dict_path=None, use_space_char=False, **kwargs):
+        super(CANLabelDecode, self).__init__(character_dict_path, use_space_char)
+
+    def decode(self, text_index, preds_prob=None):
+        result_list = []
+        batch_size = len(text_index)
+        for batch_idx in range(batch_size):
+            seq_end = text_index[batch_idx].argmin(0)
+            idx_list = text_index[batch_idx][:seq_end].tolist()
+            symbol_list = [self.character[idx] for idx in idx_list]
+            probs = []
+            if preds_prob is not None:
+                probs = preds_prob[batch_idx][: len(symbol_list)].tolist()
+
+            result_list.append([" ".join(symbol_list), probs])
+        return result_list
+
+    def __call__(self, preds, label=None, *args, **kwargs):
+        pred_prob = preds["word_probs"]
+        preds_idx = pred_prob.argmax(axis=2)
+
+        text = self.decode(preds_idx)
+        if label is None:
+            return {"texts": text}
+        label = self.decode(label)
+        return  {"texts": text, "labels": label}

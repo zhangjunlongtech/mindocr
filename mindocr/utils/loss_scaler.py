@@ -17,6 +17,7 @@ def get_loss_scales(cfg):
     """
     # loss scale is 1.0 by default
     loss_scale_manager = nn.FixedLossScaleUpdateCell(loss_scale_value=1.0)
+    print(type(loss_scale_manager))
 
     # Only when `FixedLossScaleManager` is used for training and the `drop_overflow_update` in
     # `FixedLossScaleManager` is set to False, then this value needs to be the same as the `loss_scale` in

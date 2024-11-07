@@ -1,6 +1,8 @@
+import mindspore
 import mindspore.ops as ops
 from mindspore import nn
 from mindspore.common import dtype as mstype
+import time
 
 
 class NetWithLossWrapper(nn.Cell):
@@ -33,22 +35,30 @@ class NetWithLossWrapper(nn.Cell):
         Returns:
             loss_val (Tensor): loss value
         """
+        # mindspore.hal.empty_cache()
+        # print("empty_cache +1")
+        time1 = time.perf_counter()
+        # if time3 is not None:
+        #     print(f"非前向时长:{time1 -time3}")
         if self.input_indices is None:
             pred = self._net(args[0])
         else:
             pred = self._net(*select_inputs_by_indices(args, self.input_indices))
-
+        
+        # print("finish batch +1")
         if self.pred_cast_fp32:
+            print(f"pred_cast_fp32:{self.pred_cast_fp32}")
             if isinstance(pred, list) or isinstance(pred, tuple):
                 pred = [self.cast(p, mstype.float32) for p in pred]
             else:
                 pred = self.cast(pred, mstype.float32)
-
+        time2 = time.perf_counter()
         if self.label_indices is None:
             loss_val = self._loss_fn(pred, *args[1:])
         else:
             loss_val = self._loss_fn(pred, *select_inputs_by_indices(args, self.label_indices))
-
+        time3 = time.perf_counter()
+        print(f"前向计算总时长：{time3-time1}，其中网络计算时长：{time2-time1}，损失计算时长：{time3-time2}")
         return loss_val
 
 
@@ -86,7 +96,8 @@ class NetWithEvalWrapper(nn.Cell):
             pred = self._net(args[0])
         else:
             pred = self._net(*select_inputs_by_indices(args, self.input_indices))
-
+        
+        
         if self.label_indices is None:
             labels = args[1:]
         else:

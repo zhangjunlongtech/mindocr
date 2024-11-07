@@ -92,7 +92,7 @@ class RecMetric(nn.Metric):
         if len(inputs) != 2:
             raise ValueError("Length of inputs should be 2")
         preds, gt = inputs
-        pred_texts = preds["texts"]
+        pred_texts = preds["texts"][0]
         # pred_confs = preds['confs']
 
         # remove padded chars in GT
@@ -119,9 +119,10 @@ class RecMetric(nn.Metric):
                 label = label.lower()
                 pred = pred.lower()
 
+            self.filter_ood = False
             if self.filter_ood:  # filter out of dictionary characters
                 label = "".join([c for c in label if c in self.dict])
-
+ 
             # remove symbols
             if self.ignore_symbol:
                 label = self.valid_symbol.sub("", label)

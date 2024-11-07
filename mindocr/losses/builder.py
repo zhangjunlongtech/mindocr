@@ -2,7 +2,7 @@ from .abinet_loss import ABINetLoss
 from .cls_loss import CrossEntropySmooth
 from .det_loss import DBLoss, EASTLoss, FCELoss, PSEDiceLoss
 from .kie_loss import VQAReTokenLayoutLMLoss, VQASerTokenLayoutLMLoss
-from .rec_loss import AttentionLoss, CTCLoss, SARLoss, VisionLANLoss
+from .rec_loss import AttentionLoss, CTCLoss, SARLoss, VisionLANLoss, CANLoss
 from .rec_multi_loss import MultiLoss
 from .table_master_loss import TableMasterLoss
 from .yolov8_loss import YOLOv8Loss
@@ -25,6 +25,7 @@ supported_losses = [
     "YOLOv8Loss",
     "MultiLoss",
     "TableMasterLoss",
+    "CANLoss",
 ]
 
 
