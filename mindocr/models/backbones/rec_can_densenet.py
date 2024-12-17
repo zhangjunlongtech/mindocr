@@ -3,12 +3,13 @@ Rec_DenseNet model
 """
 import math
 import mindspore as ms
+import mindspore.mint.nn.functional as F
 
 from mindspore import nn
 from mindspore import ops
 from ._registry import register_backbone, register_backbone_class
 
-ms.set_context(pynative_synchronize=True)
+# ms.set_context(pynative_synchronize=True)
 
 __all__ = ['DenseNet']
 
@@ -23,27 +24,35 @@ class Bottleneck(nn.Cell):
             n_channels,
             inter_channels,
             kernel_size=1,
-            has_bias=False,
+            has_bias=True,
             pad_mode='pad',
             padding=0,
+            # dtype=ms.float16,
         )
         self.bn2 = nn.BatchNorm2d(growth_rate)
         self.conv2 = nn.Conv2d(
             inter_channels,
             growth_rate,
             kernel_size=3,
-            has_bias=False,
+            has_bias=True,
             pad_mode='pad',
-            padding=1
+            padding=1,
+            # dtype=ms.float16,
         )
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
     def construct(self, x):
-        out = ops.relu(self.bn1(self.conv1(x)))
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = F.relu(out)
+        # out = ops.relu(self.bn1(self.conv1(x)))
         if self.use_dropout:
             out = self.dropout(out)
-        out = ops.relu(self.bn2(self.conv2(out)))
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = F.relu(out)
+        # out = ops.relu(self.bn2(self.conv2(out)))
         if self.use_dropout:
             out = self.dropout(out)
         out = ops.concat((x, out), 1)
@@ -59,7 +68,7 @@ class SingleLayer(nn.Cell):
             n_channels,
             growth_rate,
             kernel_size=3,
-            has_bias=False,
+            has_bias=True,
             pad_mode='pad',
             padding=1
         )
@@ -83,17 +92,22 @@ class Transition(nn.Cell):
             n_channels,
             out_channels,
             kernel_size=1,
-            has_bias=False
+            has_bias=False,
+            # dtype=ms.float16,
         )
         self.use_dropout = use_dropout
         self.dropout = nn.Dropout(p=0.2)
 
     def construct(self, x):
-        out = ops.relu(self.bn1(self.conv1(x)))
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = F.relu(out)
+        # out = ops.relu(self.bn1(self.conv1(x)))
 
         if self.use_dropout:
             out = self.dropout(out)
-        out = ops.avg_pool2d(out, 2, stride=2, ceil_mode=True)
+        # out = ops.avg_pool2d(out, 2, stride=2, ceil_mode=True)
+        out = F.avg_pool2d(out, 2, ceil_mode=True, count_include_pad=False)
         return out
 
 
@@ -141,6 +155,7 @@ class DenseNet(nn.Cell):
             has_bias=False,
             pad_mode='pad',
             padding=3,
+            # dtype=ms.float16,
         )
         self.dense1 = self.make_dense(
             n_channels, growth_rate, n_dense_blocks, bottleneck, use_dropout
@@ -162,12 +177,12 @@ class DenseNet(nn.Cell):
             n_channels, growth_rate, n_dense_blocks, bottleneck, use_dropout
         )
         n_channels += n_dense_blocks * growth_rate
-        self.out_channels = [n_channels]
+        self.out_channels = [n_channels] #????不一样
 
     def construct(self, x):
         out = self.conv1(x)
         out = ops.relu(out)
-        out = ops.max_pool2d(out, 2, ceil_mode=True)
+        out = F.max_pool2d(out, 2, ceil_mode=True)
         out = self.dense1(out)
         out = self.trans1(out)
         out = self.dense2(out)
@@ -178,11 +193,20 @@ class DenseNet(nn.Cell):
     def make_dense(self, n_channels, growth_rate, n_dense_blocks, bottleneck, use_dropout):
         """Create dense_layer of DenseNet"""
         layers = []
-        layer_constructor = Bottleneck if bottleneck else SingleLayer
-        for _ in range(int(n_dense_blocks)):
-            layers.append(layer_constructor(n_channels, growth_rate, use_dropout))
+        for i in range(int(n_dense_blocks)):
+            if bottleneck:
+                layers.append(Bottleneck(n_channels, growth_rate, use_dropout))
+            else:
+                layers.append(SingleLayer(n_channels, growth_rate, use_dropout))
             n_channels += growth_rate
         return nn.SequentialCell(*layers)
+
+        # layers = []
+        # layer_constructor = Bottleneck if bottleneck else SingleLayer
+        # for _ in range(int(n_dense_blocks)):
+        #     layers.append(layer_constructor(n_channels, growth_rate, use_dropout))
+        #     n_channels += growth_rate
+        # return nn.SequentialCell(*layers)
 
 
 @register_backbone

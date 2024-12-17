@@ -18,7 +18,6 @@ class Preprocessor(object):
         if task == "det":
             limit_side_len = kwargs.get("det_limit_side_len", 736)
             limit_type = kwargs.get("det_limit_type", "min")
-
             pipeline = [
                 {"DecodeImage": {"img_mode": "RGB", "keep_ori": True, "to_float32": False}},
                 # {'DetResize':
@@ -94,10 +93,10 @@ class Preprocessor(object):
             parsed_height, parsed_width = int(parsed_img_shape[1]), int(parsed_img_shape[2])
             if algo in optimal_hparam:
                 target_height = optimal_hparam[algo]["target_height"]
+                norm_before_pad = optimal_hparam[algo].get("norm_before_pad", DEFAULT_NORM_BEFORE_PAD)
             else:
                 target_height = parsed_height
-
-            norm_before_pad = optimal_hparam[algo].get("norm_before_pad", DEFAULT_NORM_BEFORE_PAD)
+                norm_before_pad = DEFAULT_NORM_BEFORE_PAD
 
             # TODO: update max_wh_ratio for each batch
             # max_wh_ratio = parsed_width /  float(parsed_height)
@@ -161,6 +160,30 @@ class Preprocessor(object):
                 #    'std': [127.0, 127.0, 127.0]}},
                 {"ToCHWImage": None},
             ]
+
+            if algo == "CAN":
+                pipeline = [
+                    {"DecodeImage": {
+                        "img_mode": "BGR",
+                        "channel_first": False,
+                        },
+                    },
+                    {"CANImageNormalize": {
+                        "mean": [0,0,0],
+                        "std": [1,1,1],
+                        "order": 'hwc',
+                        },
+                    },
+                    {"GrayImageChannelFormat": {
+                        "inverse": True
+                        },
+                    },
+                    {"CANLabelEncode":{
+                        "is_train": False
+                        },
+                    },
+                ]
+
         elif task == "ser":
             pipeline = [
                 {"DecodeImage": {"img_mode": "RGB", "infer_mode": True, "to_float32": False}},
